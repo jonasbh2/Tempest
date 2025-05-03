@@ -1370,9 +1370,9 @@ def printHud(p):
         screen.blit(kFont.render("RENUNCIATION", True, (255, 255, 255)), (50, 40))
         screen.blit(kFont.render(f"MAGIC: {magicPoints}", True, ttColor), (10, 70))
 
-    fps = int(clock.get_fps())
-    fps_text = kFont.render(f"FPS: {fps}", True, (255, 255, 255))
-    screen.blit(fps_text, (10, HEIGHT - 30))
+    # fps = int(clock.get_fps())
+    # fps_text = kFont.render(f"FPS: {fps}", True, (255, 255, 255))
+    # screen.blit(fps_text, (10, HEIGHT - 30))
 
     # ── keycard indicator ──────────────────────────────────────────
     if player.keys[0]:  # blue key collected
