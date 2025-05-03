@@ -1184,7 +1184,8 @@ def victory():
 
 
 def cutscene(title, body_text):
-    scroll_speed = 1.2
+    scroll_speed = 1
+
     wrap_width = 50
     lines = []
 
@@ -1245,7 +1246,7 @@ def cutscene(title, body_text):
     # Animation loop
     running = True
     while running:
-        clock.tick(60)
+        clock.tick(40)
         screen.fill((0, 0, 0))
 
         for i in range(len(lines)):
