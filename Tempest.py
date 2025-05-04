@@ -322,12 +322,12 @@ class Platform(pygame.sprite.Sprite):
         # (assumes you’ve already generated e.g. 'tile_oblique.png')
         mapping = {
             "platform": "assets/tile_oblique_d8.png",
-            "crate":    "assets/crate_oblique_d8.png",
-            "grass":    "assets/grass_oblique_d8.png",
-            "sand":     "assets/sand_oblique_d8.png",
-            "rock":     "assets/rock_oblique_d8.png",
-            "dirt":     "assets/dirt_oblique_d8.png",
-            "moss":     "assets/moss_oblique_d8.png",
+            "crate": "assets/crate_oblique_d8.png",
+            "grass": "assets/grass_oblique_d8.png",
+            "sand": "assets/sand_oblique_d8.png",
+            "rock": "assets/rock_oblique_d8.png",
+            "dirt": "assets/dirt_oblique_d8.png",
+            "moss": "assets/moss_oblique_d8.png",
         }
         path = mapping.get(platform_type)
         if path and os.path.exists(path):
@@ -353,7 +353,6 @@ class Platform(pygame.sprite.Sprite):
         """
         draw_rect = self.rect.move(0, self._draw_offset_y)
         surface.blit(self.image, camera.to_screen(draw_rect))
-
 
 
 class Support(pygame.sprite.Sprite):  # see platform class
@@ -2204,9 +2203,9 @@ def main():
             if here < above:
                 blended_map[row][col] = above
 
-    # Step 4: render final overlay + extend right‐edge shadows
+    # ─── Step 4: render final overlay + extend right‑edge shadows ───
 
-    # ─── Step 4a data‐gather: collect triangles ───
+    # triangle settings
     tri_debug = False
     tri_x_shift = 3
     tri_y_shift = 8
@@ -2214,12 +2213,15 @@ def main():
     tri_h = 8
 
     overlay_w, overlay_h = shadow_overlay.get_size()
-    triangles = []  # will hold tuples of (points_list, alpha)
+    triangles = []
+
+    # Keep track of tile‑columns that should never get a triangle again:
+    blocked_cols = set()
 
     for row in range(shadow_rows):
         ext_cols = []
 
-        # scan each 4×4 cell + its extension
+        # Step 4a: draw each 4×4 cell + rightward bleed, collect ext_cols
         for col in range(shadow_cols):
             alpha = blended_map[row][col]
             if alpha <= 0:
@@ -2228,41 +2230,63 @@ def main():
             x = col * SHADOW_RES
             y = row * SHADOW_RES
 
-            # main block & extension drawing still happens here
-            pygame.draw.rect(shadow_overlay, (0, 0, 0, alpha),
-                             pygame.Rect(x, y, SHADOW_RES, SHADOW_RES))
+            # main shadow cell
+            pygame.draw.rect(
+                shadow_overlay,
+                (0, 0, 0, alpha),
+                pygame.Rect(x, y, SHADOW_RES, SHADOW_RES),
+            )
+
+            # if tile to the right is air, bleed and mark for triangle
             tile_r = row // blocks_per_tile
             tile_c = col // blocks_per_tile
-            if tile_c == len(level[0]) - 1 or level[tile_r][tile_c + 1] not in "PSRDM":
+            right_is_air = (
+                    tile_c == len(level[0]) - 1
+                    or level[tile_r][tile_c + 1] not in "PSRDM"
+            )
+            if right_is_air:
                 for off in (1, 2):
                     ex = x + off * SHADOW_RES
-                    pygame.draw.rect(shadow_overlay, (0, 0, 0, alpha),
-                                     pygame.Rect(ex, y, SHADOW_RES, SHADOW_RES))
+                    pygame.draw.rect(
+                        shadow_overlay,
+                        (0, 0, 0, alpha),
+                        pygame.Rect(ex, y, SHADOW_RES, SHADOW_RES),
+                    )
                 ext_cols.append((col, alpha))
 
-        # collect triangles at bottom sub-cell
-        if row % blocks_per_tile == blocks_per_tile - 1:
-            # compute bottom Y of triangle, then clamp
+        # Step 4b: collect triangles once per tile bottom, unless blocked
+        if row % blocks_per_tile == (blocks_per_tile - 1):
             bottom_y = min((row + 1) * SHADOW_RES + tri_y_shift, overlay_h)
             top_y = max(bottom_y - tri_h, 0)
 
+            tile_r = row // blocks_per_tile
             for col, alpha in ext_cols:
+                tile_c = col // blocks_per_tile
+
+                # if we’ve previously hit air in this tile‑col, skip forever
+                if tile_c in blocked_cols:
+                    continue
+
+                # if this tile cell itself is air, stop future triangles here
+                if level[tile_r][tile_c] == " ":
+                    blocked_cols.add(tile_c)
+                    continue
+
+                # otherwise, schedule one triangle for this column
                 x2 = col * SHADOW_RES + tri_x_shift
                 x2 = max(0, min(x2, overlay_w - tri_w))
 
-                # build the triangle polygon
                 pts = [
                     (x2, top_y),
                     (x2 + tri_w, top_y),
-                    (x2, bottom_y)
+                    (x2, bottom_y),
                 ]
                 triangles.append((pts, alpha))
 
-    # ─── Step 4b draw: render all collected triangles ───
+    # Step 4c: draw all collected triangles
     for pts, alpha in triangles:
         color = (255, 0, 255, alpha) if tri_debug else (0, 0, 0, alpha)
         pygame.draw.polygon(shadow_overlay, color, pts)
-
 
     # -------- center player at start --------------------------------
     player = next(iter(players))
@@ -2561,7 +2585,7 @@ def callNextCutscene():
             Prospero conjures a mighty tempest to wreck a royal ship.
             His plan: confront those who betrayed him, reclaim his power,
             and orchestrate a reckoning that will change the island forever.
-            
+
             So dear the love my people bore me; nor set
 
             A mark so bloody on the business; but
@@ -2569,29 +2593,29 @@ def callNextCutscene():
             With colours fairer painted their foul ends.
 
             In few, they hurried us aboard a bark,
-            
+
             Bore us some leagues to sea; where they prepared
-            
+
             A rotten carcass of a boat, not rigg’d,
-            
+
             Nor tackle, sail, nor mast; the very rats
-            
+
             Instinctively have quit it: there they hoist us,
-            
+
             To cry to the sea that roar’d to us; to sigh
-            
+
             To the winds, whose pity, sighing back again...
-            
+
             Sit still, and hear the last of our sea-sorrow.
 
             Here in this island we arrived; and here
 
             Have I, thy schoolmaster, made thee more profit
-            
+
             Than other princesses can, that have more time
-            
+
             For vainer hours, and tutors not so careful...
-            
+
             - Prospero, Act 1, Scene 2.
             """)
 
@@ -2599,7 +2623,7 @@ def callNextCutscene():
         cutscene("ACT II: STRANGE LAND", """
                 Congratulations on beating Act 1. You have unlocked your third ability: SPIRIT BIND.
                 Press '3' to use SPIRIT BIND, and freeze an enemy in place for a short time! (Not effective on very large enemies.)
-        
+
                 Shipwrecked nobles roam the island, bewildered and enchanted.
                 Illusions cloud their senses. Power struggles ignite.
                 The island reveals the rot beneath the courtly surface.
@@ -2626,7 +2650,7 @@ def callNextCutscene():
             Congratulations on beating level 2.
             You have unlocked your fourth ability: ROUGH MAGIC.
             Press '4' to cast an explosive area-of-effect spell!
-                
+
             Illusions tighten their grip. The nobles, starving and delirious,
             find a banquet — only for it to vanish at Ariel’s command.
             Caliban plots with Stephano to overthrow Prospero.
@@ -2635,11 +2659,11 @@ def callNextCutscene():
             That hath to instrument this lower world
             And what is in’t—the never-surfeited sea
             Hath caused to belch up you...
-    
+
             In their distractions: they are now in my power;
             And in these fits I leave them, while I visit
             Young Ferdinand...
-    
+
             - Ariel & Prospero, Act 3, Scene 3.
             """)
 
@@ -2648,7 +2672,7 @@ def callNextCutscene():
             Congratulations on beating level 3.
             You have unlocked your fifth ability: SHIELD.
             Press '5' to protect yourself from harm, draining magic over time!
-            
+
             Spirits dance at Prospero’s command. A masque unfolds —
             a vision of harmony, of blessing, of hope for Miranda’s future.
             But even dreams must end. Caliban’s treachery draws near.
@@ -2698,44 +2722,44 @@ def callNextCutscene():
             Now my charms are all o’erthrown,
 
             And what strength I have’s mine own,
-            
+
             Which is most faint: now, ’tis true,
-            
+
             I must be here confined by you,
-            
+
             Or sent to Naples. Let me not,
-            
+
             Since I have my dukedom got,
-            
+
             And pardon’d the deceiver, dwell
-            
+
             In this bare island by your spell;
-            
+
             But release me from my bands
-            
+
             With the help of your good hands:
-            
+
             Gentle breath of yours my sails
-            
+
             Must fill, or else my project fails,
-            
+
             Which was to please. Now I want
-            
+
             Spirits to enforce, art to enchant;
-            
+
             And my ending is despair,
-            
+
             Unless I be relieved by prayer,
-            
+
             Which pierces so, that it assaults
-            
+
             Mercy itself, and frees all faults.
-            
+
             As you from crimes would pardon’d be,
-            
+
             Let your indulgence set me free.
-            
-            
+
+
             FINAL SCORE: {scorecount}
             """)
 
