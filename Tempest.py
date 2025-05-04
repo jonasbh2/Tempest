@@ -15,6 +15,7 @@ pygame.display.set_icon(pygame.image.load("assets/wind_icon.png"))
 
 pygame.mouse.set_visible(False)
 
+cloud_scroll = 0
 
 pygame.init()
 pygame.mixer.init()
@@ -1383,6 +1384,7 @@ def printHud(p):
 # ───────── main game  ───────────────────────────────────────────────
 def main():
     global coinCount, scorecount, lives, deflevel, magicPoints, renunciationActive, renunciationCooldown, level
+    global cloud_scroll
 
     renunciationActive = False
     renunciationCooldown = 0
@@ -2395,8 +2397,10 @@ def main():
         screen.fill((0, 0, 0))
         # ─── parallax scrolling background ────────────────────────────────
         parallax_factor = 0.15
-        bg_x = -camera.offset.x * parallax_factor % bg_width
-        bg_y = -camera.offset.y * parallax_factor % bg_height
+        cloud_scroll += 0.2  # Moves clouds slowly to the left
+
+        bg_x = (-camera.offset.x * parallax_factor + cloud_scroll) % bg_width
+        bg_y = (-camera.offset.y * parallax_factor) % bg_height
 
         screen.blit(bg_img, (bg_x - bg_width, bg_y - bg_height))
         screen.blit(bg_img, (bg_x, bg_y - bg_height))
