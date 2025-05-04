@@ -2,6 +2,7 @@ import pygame
 import random
 import sys
 import textwrap
+import os
 
 pygame.init()
 
@@ -312,28 +313,47 @@ class Player(pygame.sprite.Sprite):  # player class
 
 
 class Platform(pygame.sprite.Sprite):
+    TILE_SIZE = 32
+
     def __init__(self, pos, platform_type="platform", *groups):
         super().__init__(*groups)
-        self.image = pygame.Surface((32, 32))
 
-        if platform_type == "platform":
-            self.image = pygame.image.load('assets/tile.png')
-        elif platform_type == "crate":
-            self.image = pygame.image.load('assets/crate.png')
-        elif platform_type == "grass":
-            self.image = pygame.image.load('assets/grass.png')
-        elif platform_type == "sand":
-            self.image = pygame.image.load('assets/sand.png')
-        elif platform_type == "rock":
-            self.image = pygame.image.load('assets/rock.png')
-        elif platform_type == "dirt":
-            self.image = pygame.image.load('assets/dirt.png')
-        elif platform_type == "moss":
-            self.image = pygame.image.load('assets/moss.png')
+        # ─── load your oblique-projected image here ─────────────
+        # (assumes you’ve already generated e.g. 'tile_oblique.png')
+        mapping = {
+            "platform": "assets/tile_oblique_d8.png",
+            "crate":    "assets/crate_oblique_d8.png",
+            "grass":    "assets/grass_oblique_d8.png",
+            "sand":     "assets/sand_oblique_d8.png",
+            "rock":     "assets/rock_oblique_d8.png",
+            "dirt":     "assets/dirt_oblique_d8.png",
+            "moss":     "assets/moss_oblique_d8.png",
+        }
+        path = mapping.get(platform_type)
+        if path and os.path.exists(path):
+            self.image = pygame.image.load(path).convert_alpha()
         else:
-            self.image.fill((255, 0, 255))  # magenta = error color
+            # fallback to magenta so you spot missing assets
+            self.image = pygame.Surface((self.TILE_SIZE, self.TILE_SIZE), pygame.SRCALPHA)
+            self.image.fill((255, 0, 255))
 
-        self.rect = self.image.get_rect(topleft=pos)
+        # ─── compute collision rect of *just* the 32×32 front face ──
+        depth = self.image.get_height() - self.TILE_SIZE
+        x, y = pos
+        self.rect = pygame.Rect(x, y + depth,
+                                self.TILE_SIZE, self.TILE_SIZE)
+
+        # ─── store draw offset so the roof shows up above the rect ──
+        self._draw_offset_y = -depth
+
+    def draw(self, surface, camera):
+        """
+        Draw the full oblique image, offset so that
+        only the bottom 32×32 of it aligns with self.rect.
+        """
+        draw_rect = self.rect.move(0, self._draw_offset_y)
+        surface.blit(self.image, camera.to_screen(draw_rect))
+
 
 
 class Support(pygame.sprite.Sprite):  # see platform class
@@ -1077,12 +1097,34 @@ class Crown(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(center=self.rect.center)
 
 
-class BlueDoor(pygame.sprite.Sprite):  # similar to player class but for platforms
-    def __init__(self, pos, *groups):  # constructs platforms
-        super().__init__(*groups)  # initializes groups
-        self.image = pygame.Surface((32, 32))  # platforms are 32x32 and only to be placed every 32 pixels.
-        self.image = pygame.image.load('assets/blue_door.png')
-        self.rect = self.image.get_rect(topleft=pos)  # coords assigned to top left
+class BlueDoor(pygame.sprite.Sprite):
+    TILE_SIZE = 32
+
+    def __init__(self, pos, *groups):
+        super().__init__(*groups)
+
+        # ─── load your (oblique-projected) blue door image ─────────────
+        # replace with your actual oblique-door asset
+        self.image = pygame.image.load('assets/blue_door_oblique_d8.png').convert_alpha()
+
+        # ─── compute just the 32×32 front face for collisions ─────────
+        depth = self.image.get_height() - self.TILE_SIZE
+        x, y = pos
+        # we shift the rect _down_ by `depth` so that only the bottom 32×32
+        # of the image is considered solid
+        self.rect = pygame.Rect(x, y + depth,
+                                self.TILE_SIZE, self.TILE_SIZE)
+
+        # ─── store a draw offset so the “roof” of the door renders above the rect ───
+        self._draw_offset_y = -depth
+
+    def draw(self, surface, camera):
+        """
+        Draw the full oblique image, offset so that
+        the 32×32 front face aligns with self.rect.
+        """
+        draw_rect = self.rect.move(0, self._draw_offset_y)
+        surface.blit(self.image, camera.to_screen(draw_rect))
 
 
 class Trophy(pygame.sprite.Sprite):
@@ -1434,7 +1476,7 @@ def main():
             "                     PDD     P                                                                                                                                                                                                                                                                       |                   V                       V              V             |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       DPPPDDDDDDDDDDD               ",
             "                     DDDPPP  D                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        DDDDDDDDDDDDDDDPP  PPP        ",
             "                 PPPPDRDDDDPPD                                                   ***                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  RDDDRRDDDDDDRDDDD PDDDP       ",
-            "                 DDDDDRRDDDDDD                                                                                                      *********       E                   E                                                                                                                    * * * * *                          :              E                                                                                              |       V       |        V         |           V            |                                                                                                                                                                                                                                                                                                                                                                                           RDDDRRRRRRRRRRRDDPDDDDD       ",
+            "                 DDDDDRRDDDDDD                                                                                                      *********       E                                                                                                                                        * * * * *                          :              E                                                                                              |       V       |        V         |           V            |                                                                                                                                                                                                                                                                                                                                                                                           RDDDRRRRRRRRRRRDDPDDDDD       ",
             "                PDDDDRRRDDDDDR                                                                                                PP                  PPPPP  P P     PP   PPPP                           >                                                                                                 PPP                    ::::  PPP P  P PPPPPP  PP PPP                 P         P    P                                                                 ***                ***                      ***                                                                                                                                                                                                                                                                                                                                                                                          RRMRRRRRRRRRRRRDDDDDDDDPPP   P",
             "                DDDDDRRRRRRDDR                                                     E                                          DD          PP    PPDDDDDPPD D  PPPDDPP DDDDP                       |  V  |                            E                                                    PP           DDD P             PP  PPPPPPPDDD DPPD DDDDDD  DD DDDPP             PPDP P    PPDP  PDP                                                                             <                                                                                                                                                                                                                                                                                                                                                                                                                           RRRRRRRRRRRRRRRRRDDRRRDDDDPP D",
             "               PDRRRRRRRRRRRRR                                                PP PPPPPP                                    P PDDP         DD  PPDDDDDDDDDDPDPPDDDDDDDPDDDDD                                                       P PPP                                                   DDPPPP   P PPDDDPDP  PP        DDPPDDDDDDDDDDPDDDDPDDDDDDPPDDPDDDDDPP           DDDDPDPPP DDDDP DDDPP     *                                        PPP                         PPP                            PP                                                                                                                                                                                                                                                                                                                                                                                            RRRRRRRRRRRRRRRRRDMRMRRDDDDDPD",
@@ -1532,17 +1574,17 @@ def main():
             "RRRRRRRRRRRRRMRRRRRRRRRRMRRRRR                                * *                PPDPP   P        E      ?                                                                       PPPDRDDMDDDDDDDDDPDDRDRRRDRDDRRDDDPDDDDDDDDDDDDPPPP                                          RRRRRRRRRRRRRMRRRRRRRRRRMRRRRR",
             "MRRRRRRRRRRRRRRRRRRRRRRRRRRMMM                               *   *  PP     P     DDDDD   D       PPPPP  ><>                                                                    PPDDDDRRDRRRDDDDRRDDDDRRRRRRRRRRRDDDDDDDDDDDDDDDDDDDD                                          MRRRRRRRRRRRRRRRRRRRRRRRRRRMMM",
             "RRRMRRRRRRRRRRRMRRMRRRRRRRMRRR                                  PPPPDDPP   D    PDDDDDPPPDP     PDDDDDPPPPP                      PP              PP                           PDDDDDRRRRRRRRRRRMRRDRRRRRRRMMRRRRRRRDRRRRRDDRDDDDDDDDP   PP                                    RRRMRRRRRRRRRRRMRRMRRRRRRRMRRR",
-            "RRRRRRRMRRRRRRRRRRRMRRRRRRRRRR                                  DDDDDDDDPPPDP   DDDRDDDDDDDPPPP DDDDDDDDDDDP           P       PPDDP         P  PDDPP                         DDDDDDRRRRRRRRRRRRRRDRRRRRRRRRRRRRRRRDRRRRRRRRMRRRDDDDD PPDDPP                              P   RRRRRRRMRRRRRRRRRRRMRRRRRRRRRR",
+            "RRRRRRRMRRRRRRRRRRRMRRRRRRRRRR                                  DDDDDDDDPPPDP   DDDRDDDDDDDPPPP DDDDDDDDDDDP           P       PPDDP         P  PDDPP                         DDDDDDRRRRRRRRRRRRRRDRRRRRRRRRRRRRRRRDRRRRRRRRMRRRDDDDD PPDDPP                      C       P   RRRRRRRMRRRRRRRRRRRMRRRRRRRRRR",
             "RMRRRMRRRRRRRRRRRRMRRRRRRRRMRR                  PPP P        PPPDDDDDDDDDDDDDPPPDRRRRRDDDMDDDDDPDDDDDDDDDDDR           D P   PPDDDDD         DPPDDDDD   PP                    DDDRRRRRRRRMRRRMRRRRRRRRRRRRRRRRRRMRRRRRRRRRRRRRRRRRRRDPDDDDDDPP  P      P                  D   RMRRRMRRRRRRRRRRRRMRRRRRRRRMRR",
-            "RRRRRRRRRRRMRMRRRRRRRRRRRRRRRRPP              P DDDPD PP    PDDDDDDDRMDDDDDRDDDDDRRRRRDDDRDDDDDDDRRRRRDDDDRR         PPDPD PPDDDDDDDPP  P  PPDDDDDDDDP  DDP                              =      RRRRRRRRRMRRRRRRRRRRRRRRRRMRRRRRRRRRDDDDDDDDDD PD      DPPP              PDPP RRRRRRRRRRRMRMRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRMRMRRRRRRRRRRRRRRRRPP              P DDDPD PP    PDDDDDDDRMDDDDDRDDDDDRRRRRDDDRDDDDDDDRRRRRDDDDRR         PPDPD PPDDDDDDDPP  P  PPDDDDDDDDP  DDP                              =      RRRRRRRRRMRRRRRRRRRRRRRRRRMRRRRRRRRRDDDDDDDDDD PD      DPPP;;;;;;;;;;;;;;PDPP RRRRRRRRRRRMRMRRRRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRRRRRRRRRMRRRRRRRRDD              DPDDDDDPDD    DDDDRRRRRRRRDDDRDDDDMRRRRRRRRRRDDDDDRRRRRRRRRRRR           RDDPDDDDDDRRDDDPPDP DDDDDDRRDDDXPDDD                              =              RRRRRRRRRRMRRRMRRRRRRRRRMRRRRDDDRRDDDDPDDPPPPPPDDDD:           PPDDDDPRRRRRRRRRRRRRRRRRRRRRMRRRRRRRR",
             "RRRRRRRRRRRRRRRRRMRRRRRRRRRRRRDDP            PDDDDDDDDDDPPPPDDDDRRRRRRRRRRRRMDDDRRRRRRRRRRRRRRRDRRRRMRRR            RRRRRDDDDDDRRRRRDDDDDDPDDRDDRRRRRDPDDDDPP         E                  =                RMRRRRRRRRRRRRRRRRRRRRRRRRRDRRRRRRDDDDDDDDD      =     :     DDDRDDDRRRRRRRRRRRRRRRRRMRRRRRRRRRRRR",
-            "RRMRRRRRRRRRRRRRRRRRRRRRRRRRRRDDD            DDDRRRDRDDDDDDDDRRMRRRRRRRRRRRRRRRRRRRRRRRRRMRRRRRRRRR   =           RRRRRRRRDDDRRRRRRRDDDDDDDDDRRRRRRRRDDDMRDDDS  SSSRRRRRRRR              =                       RRRRRRRRMRRRRRRRRMRRRR         =     C    =     =    SDDDRDDDRRMRRRRRRRRRRRRRRRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR         RRDRDRRRRMDRRDDDDRRRRRRRRRMMRRRRRMRRRRRRRRRRRRR            =             RRRRRRDRRRRRRRRRRRDDRDDRRRRRRRRRRRDDRRRDDRRRRRRRRRRRRRRRRRRRRR       =                            =             ;           =          =  :: =    RDDRRMRDRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRMRMRR          DMRRMRRRRRRDDDDRRRRRRRRRRRRRRRRR     =                   =          RRMMRRRRRRRRRRRRRRRRRRRRMDRRRRRRRRRRRDRRRRDDRRRRRRRRRRRRRRRRRRRRRRRRRRRRRMRRR                        =             ;           =          RRRRRRRRRRRMRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRRRRRRRRRRMRRRRRRRRRRRRM        RRRRRRRRRRRRRRMRRRRRRRRRRR            =                   =    RRRRRRRRRRRRRRRRRRRRRMRRMRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR                    =     C       ;           = RRRRRRRRRRRRMRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRMRRRRRRR",
-            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR      RRRRRRRRRMRRRR                     =                  RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRMRMRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR                =             ;          MRRRRRRRRRRRRRRMRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
-            "RRRRMRMRRRRRRRRRRRRRRRRRRMRRRRRRRRRMRR       RRRRRMRRRRR                   C      =         < RRRRRRRMRRRRRRRRRRRRRMRRRRRRRRRRRRRRRRRRRRMRRRRRRRRRRRMRRRRRRRRRRRRRRRRRRRRRRMRMRRRRRRRRRRRRRRRRRRRRRRRMM               =             ;    RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRMRMRRRRRRRRRRRRRRRRRRMRRRR",
+            "RRMRRRRRRRRRRRRRRRRRRRRRRRRRRRDDD            DDDRRRDRDDDDDDDDRRMRRRRRRRRRRRRRRRRRRRRRRRRRMRRRRRRRRR   =           RRRRRRRRDDDRRRRRRRDDDDDDDDDRRRRRRRRDDDMRDDDS  SSSRRRRRRRR              =                       RRRRRRRRMRRRRRRRRMRRRR         =          =     =    SDDDRDDDRRMRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR         RRDRDRRRRMDRRDDDDRRRRRRRRRMMRRRRRMRRRRRRRRRRRRR            =             RRRRRRDRRRRRRRRRRRDDRDDRRRRRRRRRRRDDRRRDDRRRRRRRRRRRRRRRRRRRRR       =                            =                         =          =  :: =    RDDRRMRDRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRMRMRR         RRMRRMRRRRRRDDDDRRRRRRRRRRRRRRRRR     =                   =          RRMMRRRRRRRRRRRRRRRRRRRRMDRRRRRRRRRRRDRRRRDDRRRRRRRRRRRRRRRRRRRRRRRRRRRRRMRRR                        =                         =          RRRRRRRRRRRMRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRMRRRRRRRRRRRRM        RRRRRRRRRRRRRRMRRRRRRRRRRR            =                   =    RRRRRRRRRRRRRRRRRRRRRMRRMRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR                    =     C                   = RRRRRRRRRRRRMRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRMRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR    RRRRRRRRRRRMRRRR                     =                  RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRMRMRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR                =                        MRRRRRRRRRRRRRRMRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRMRMRRRRRRRRRRRRRRRRRRMRRRRRRRRRMRRRRR    RRRRRMRRRRR                   C      =         < RRRRRRRMRRRRRRRRRRRRRMRRRRRRRRRRRRRRRRRRRRMRRRRRRRRRRRMRRRRRRRRRRRRRRRRRRRRRRMRMRRRRRRRRRRRRRRRRRRRRRRRMM               =                  RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRMRMRRRRRRRRRRRRRRRRRRMRRRR",
             "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR        RRRR                             =       RRRMRRRRRRRRRRRRRRRRRRMRRRRRRRRRRRRRRRRMRRRRRRRRRMRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRMRRRRRRRRRRRRRRRRRRRRRRRRRRRMRRRRRRRRRRRRRRRRMRRRRRRRRRRRRRRRRRRRRRRRRRRR",
             "RRRRMRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR        =       C                      =   MRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRMRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRMRRRRRRRRMRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRMRRRRRRRRRRRRRRMRRRRMRRRRRRRRRRRRRRRRRMRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRMRRR",
             "RRRRRRRRRRRMRRRRRRRRRRRRRRRRRRMRRRRRMRRRRRRRR      =                     RRRRRRRRRRRMRRRRRRRRRRRRRRRRRRRRRRRRRRMRRRRRRRRRRRMRRRMRRRRRRRRRMRRRRRRRRRRRRRRRRRRRRRMRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRMMRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRMRRRRRRRRRR",
@@ -1937,11 +1979,17 @@ def main():
     pygame.display.flip()  # actually show it before loading starts
 
     # -------- build level -------------------------------------------
-    for r, row in enumerate(level):
-        for c, ch in enumerate(row):
-            x, y = c * TILE_SIZE, r * TILE_SIZE
+    num_rows = len(level)
+    for r in range(num_rows - 1, -1, -1):  # r = last row down to 0
+        row = level[r]
+        for c, ch in enumerate(row):  # c = 0 … width-1, left→right
+            x = c * TILE_SIZE
+            y = r * TILE_SIZE
             if ch == "X":
                 Player((x, y), players, entities, platforms=platforms)
+
+            elif ch == ";":
+                BlueDoor((x, y), entities, platforms, blueDoors)
 
             elif ch == "P":
 
@@ -1994,8 +2042,6 @@ def main():
                 BigAmmo((x, y), entities, bigAmmoPickups)
             elif ch == "-":
                 MovingPlatform((x, y), entities, smartEnemies, platforms, smartPlatforms)
-            elif ch == ";":
-                BlueDoor((x, y), entities, platforms, blueDoors)
             elif ch == "^":
                 Trophy((x, y), entities, trophies)
             elif ch == "?":
@@ -2021,19 +2067,27 @@ def main():
     shadow_overlay = pygame.Surface((level_w, level_h), pygame.SRCALPHA)
     alpha_map = [[0 for _ in range(shadow_cols)] for _ in range(shadow_rows)]
 
-    # Step 1a: fade downward from surface tiles (only over solid tiles)
+    # ─── Step 1a: fade downward from surface tiles (stop when you hit air) ───
     for col in range(len(level[0])):
         for row in range(len(level)):
             tile = level[row][col]
             tile_above = level[row - 1][col] if row > 0 else " "
 
+            # only start a fade where a solid tile sits under air
             if tile in "PSRDM" and tile_above not in "PSRDM":
                 s_col_start = col * blocks_per_tile
                 s_row_start = row * blocks_per_tile
 
+                # march down at up to max_depth tiles
                 for i in range(1, max_depth * blocks_per_tile + 1):
                     fade_row = s_row_start + i
                     if fade_row >= shadow_rows:
+                        break
+
+                    # if the tile _below_ is no longer solid, stop the fade entirely
+                    below_tile_r = fade_row // blocks_per_tile
+                    if not (0 <= below_tile_r < len(level)
+                            and level[below_tile_r][col] in "PSRDM"):
                         break
 
                     fade_ratio = min(1.0, i / (max_depth * blocks_per_tile))
@@ -2044,22 +2098,22 @@ def main():
                         if shadow_col >= shadow_cols:
                             continue
 
-                        # Get world position in pixels
+                        # confirm this sub‐cell is over solid‐over‐solid
                         world_y = fade_row * SHADOW_RES
                         world_x = shadow_col * SHADOW_RES
+                        tr = world_y // TILE_SIZE
+                        tc = world_x // TILE_SIZE
+                        ar = (world_y - SHADOW_RES) // TILE_SIZE
 
-                        tile_row = world_y // TILE_SIZE
-                        tile_above_row = (world_y - SHADOW_RES) // TILE_SIZE
-                        tile_col = world_x // TILE_SIZE
-
-                        # Only apply shadow if this location is over a solid tile AND above is also solid
                         if (
-                                0 <= tile_row < len(level)
-                                and 0 <= tile_col < len(level[0])
-                                and level[tile_row][tile_col] in "PSRDM"
-                                and (tile_above_row < 0 or level[tile_above_row][tile_col] in "PSRDM")
+                                0 <= tr < len(level)
+                                and 0 <= tc < len(level[0])
+                                and level[tr][tc] in "PSRDM"
+                                and (ar < 0 or level[ar][tc] in "PSRDM")
                         ):
-                            alpha_map[fade_row][shadow_col] = max(alpha_map[fade_row][shadow_col], alpha)
+                            alpha_map[fade_row][shadow_col] = max(
+                                alpha_map[fade_row][shadow_col], alpha
+                            )
 
     # Step 1b: fade upward from enclosed cave ceilings
     for col in range(1, len(level[0]) - 1):  # skip edges
@@ -2099,51 +2153,116 @@ def main():
                         ):
                             alpha_map[fade_row][s_col + dx] = max(alpha_map[fade_row][s_col + dx], alpha)
 
-    # Step 2: horizontal blending (air tiles never get shadow)
+    # ─── Step 2: horizontal blending (only over solid or enclosed‐cave cells) ───
     blended_map = [[0 for _ in range(shadow_cols)] for _ in range(shadow_rows)]
 
     for row in range(shadow_rows):
         for col in range(shadow_cols):
-            tile_row = row // blocks_per_tile
-            tile_col = col // blocks_per_tile
+            # figure out which level‐tile this subcell lives over
+            tr = row // blocks_per_tile
+            tc = col // blocks_per_tile
 
-            # If this square is over air, keep it bright (no shadow)
-            if (
-                    tile_row >= len(level)
-                    or tile_col >= len(level[0])
-                    or level[tile_row][tile_col] not in "PSRDM"
-            ):
+            # 1) allow if it's directly over solid ground
+            over_solid = (
+                    0 <= tr < len(level)
+                    and 0 <= tc < len(level[0])
+                    and level[tr][tc] in "PSRDM"
+            )
+
+            # 2) or if it's an enclosed cave‐ceiling air‐cell
+            in_cave = False
+            if 1 <= tr < len(level) - 1 and 1 <= tc < len(level[0]) - 1:
+                if level[tr][tc] == " ":
+                    nbrs = (
+                        level[tr + 1][tc], level[tr - 1][tc],
+                        level[tr][tc + 1], level[tr][tc - 1]
+                    )
+                    if all(n in "PSRDM" for n in nbrs):
+                        in_cave = True
+
+            # skip everything else (open air)
+            if not (over_solid or in_cave):
                 blended_map[row][col] = 0
                 continue
 
-            neighbors = [alpha_map[row][col]]
+            # 3) blend this cell with left/right neighbors as before
+            neigh = [alpha_map[row][col]]
             if col > 0:
-                neighbors.append(alpha_map[row][col - 1])
+                neigh.append(alpha_map[row][col - 1])
             if col < shadow_cols - 1:
-                neighbors.append(alpha_map[row][col + 1])
+                neigh.append(alpha_map[row][col + 1])
 
-            non_zero = [a for a in neighbors if a > 0]
-            blended_alpha = int(sum(non_zero) / len(non_zero)) if non_zero else 0
-            blended_map[row][col] = blended_alpha
+            nz = [a for a in neigh if a > 0]
+            blended_map[row][col] = int(sum(nz) / len(nz)) if nz else 0
 
-    # Step 3: vertical smoothing (prevent shadows from brightening deeper down)
+    # ─── Step 3: vertical smoothing (unconditional carry-down) ───
+    # prevent “deeper” pixels from ever being brighter than above
     for col in range(shadow_cols):
         for row in range(1, shadow_rows):
-            if blended_map[row][col] < blended_map[row - 1][col]:
-                blended_map[row][col] = blended_map[row - 1][col]
+            above = blended_map[row - 1][col]
+            here = blended_map[row][col]
+            if here < above:
+                blended_map[row][col] = above
 
-    # Step 4: render final overlay
+    # Step 4: render final overlay + extend right‐edge shadows
+
+    # ─── Step 4a data‐gather: collect triangles ───
+    tri_debug = False
+    tri_x_shift = 3
+    tri_y_shift = 8
+    tri_w = 8
+    tri_h = 8
+
+    overlay_w, overlay_h = shadow_overlay.get_size()
+    triangles = []  # will hold tuples of (points_list, alpha)
+
     for row in range(shadow_rows):
+        ext_cols = []
+
+        # scan each 4×4 cell + its extension
         for col in range(shadow_cols):
             alpha = blended_map[row][col]
-            if alpha > 0:
-                x = col * SHADOW_RES
-                y = row * SHADOW_RES
-                pygame.draw.rect(
-                    shadow_overlay,
-                    (0, 0, 0, alpha),
-                    pygame.Rect(x, y, SHADOW_RES, SHADOW_RES)
-                )
+            if alpha <= 0:
+                continue
+
+            x = col * SHADOW_RES
+            y = row * SHADOW_RES
+
+            # main block & extension drawing still happens here
+            pygame.draw.rect(shadow_overlay, (0, 0, 0, alpha),
+                             pygame.Rect(x, y, SHADOW_RES, SHADOW_RES))
+            tile_r = row // blocks_per_tile
+            tile_c = col // blocks_per_tile
+            if tile_c == len(level[0]) - 1 or level[tile_r][tile_c + 1] not in "PSRDM":
+                for off in (1, 2):
+                    ex = x + off * SHADOW_RES
+                    pygame.draw.rect(shadow_overlay, (0, 0, 0, alpha),
+                                     pygame.Rect(ex, y, SHADOW_RES, SHADOW_RES))
+                ext_cols.append((col, alpha))
+
+        # collect triangles at bottom sub-cell
+        if row % blocks_per_tile == blocks_per_tile - 1:
+            # compute bottom Y of triangle, then clamp
+            bottom_y = min((row + 1) * SHADOW_RES + tri_y_shift, overlay_h)
+            top_y = max(bottom_y - tri_h, 0)
+
+            for col, alpha in ext_cols:
+                x2 = col * SHADOW_RES + tri_x_shift
+                x2 = max(0, min(x2, overlay_w - tri_w))
+
+                # build the triangle polygon
+                pts = [
+                    (x2, top_y),
+                    (x2 + tri_w, top_y),
+                    (x2, bottom_y)
+                ]
+                triangles.append((pts, alpha))
+
+    # ─── Step 4b draw: render all collected triangles ───
+    for pts, alpha in triangles:
+        color = (255, 0, 255, alpha) if tri_debug else (0, 0, 0, alpha)
+        pygame.draw.polygon(shadow_overlay, color, pts)
+
 
     # -------- center player at start --------------------------------
     player = next(iter(players))
@@ -2408,7 +2527,7 @@ def main():
         screen.blit(bg_img, (bg_x, bg_y))
 
         screen.blit(background, (-camera.offset.x, -camera.offset.y))
-        screen.blit(shadow_overlay, (-camera.offset.x, -camera.offset.y))
+        screen.blit(shadow_overlay, (-camera.offset.x, -camera.offset.y + (SHADOW_RES * 2)))
 
         for s in entities:
             if abs(s.rect.centerx - camera.offset.x - WIDTH // 2) <= (WIDTH // 2) + (TILE_SIZE * 4):
