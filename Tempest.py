@@ -549,7 +549,7 @@ class Stephano(pygame.sprite.Sprite):
 
         self.animationDirection = 0
 
-        self.bulletCooldown = random.randrange(0, 80)
+        self.bulletCooldown = random.randint(80, 120)
 
         self.animationCooldown = 15
 
@@ -562,64 +562,51 @@ class Stephano(pygame.sprite.Sprite):
         self.direction = "left"
 
     def update(self):
-
         if hasattr(self, "stunned") and self.stunned > 0:
             self.stunned -= 1
-
             return
 
         self.vel += GRAVITY
 
         if self.direction == "left":
-
             self.vel.x = -self.speed
-
         else:
-
             self.vel.x = self.speed
 
+        nearby_platforms = [p for p in self.platforms
+                            if abs(p.rect.centerx - self.rect.centerx) < 100 and
+                            abs(p.rect.centery - self.rect.centery) < 100]
+
         lookahead = 10 if self.direction == "right" else -10
-
         check_x = self.rect.centerx + lookahead
-
         check_y = self.rect.bottom + 1
-
         check_rect = pygame.Rect(check_x, check_y, 2, 2)
 
-        on_ground = any(p.rect.colliderect(check_rect) for p in self.platforms)
+        on_ground = any(p.rect.colliderect(check_rect) for p in nearby_platforms)
 
         if not on_ground:
             self.direction = "left" if self.direction == "right" else "right"
-
             self.vel.x = 0
 
-        landed, _ = move_and_collide(self, self.vel.x, self.vel.y, self.platforms)
+        landed, _ = move_and_collide(self, self.vel.x, self.vel.y, nearby_platforms)
 
         if landed:
             self.vel.y = 0
 
         self.bulletCooldown -= 1
-
         if self.bulletCooldown <= 0 and self.players:
-
-            self.bulletCooldown = 500
-
+            self.bulletCooldown = 2 * random.randint(80, 120)
             player = next(iter(self.players), None)
-
             if player:
-
                 if player.rect.centerx < self.rect.centerx:
-
                     self.direction = "left"
-
                 else:
-
                     self.direction = "right"
 
-                if not globals().get("renunciationActive", False):
-                    Bottle((self.rect.centerx, self.rect.centery), self.direction, True, True, self.entities,
-
-                           self.bullets, self.renounced)
+                if not globals().get("renunciationActive", False) and len(self.bullets) < 20:
+                    Bottle((self.rect.centerx, self.rect.centery),
+                           self.direction, True, True,
+                           self.entities, self.bullets, self.renounced)
 
         self.animate()
 
@@ -1203,7 +1190,7 @@ class Bottle(pygame.sprite.Sprite):
 
             pygame.transform.rotate(base_image, angle)
 
-            for angle in range(0, 360, 10)
+            for angle in range(0, 360, 30)
 
         ]
 
@@ -1992,6 +1979,10 @@ def printHud(p):
         key_img = pygame.image.load("assets/blue_key.png")
 
         screen.blit(key_img, (WIDTH - 42, 40))
+
+    # fps = int(clock.get_fps())
+    # fps_text = kFont.render(f"FPS: {fps}", True, (255, 255, 0))
+    # screen.blit(fps_text, (WIDTH - 100, 0))
 
 
 def main():
@@ -3237,22 +3228,13 @@ def main():
         Non player interactions
         """
 
-        for bottle in bullets:
+        hits = pygame.sprite.groupcollide(bullets, platforms, True, False)
+
+        for bottle in hits:
 
             if isinstance(bottle, Bottle):
 
-                for plat in platforms:
-
-                    if abs(bottle.rect.centerx - plat.rect.centerx) < 100 and abs(
-
-                            bottle.rect.centery - plat.rect.centery) < 100:
-
-                        if bottle.rect.colliderect(plat.rect):
-                            bottle.kill()
-
-                            sfx_glass.play()
-
-                            break
+                sfx_glass.play()
 
         for smartEnemy in smartEnemies:
 
