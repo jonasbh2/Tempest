@@ -1,25 +1,20 @@
 import pygame
-
 import random
-
 import sys
-
 import textwrap
-
 import os
 
 pygame.init()
 
-WIDTH, HEIGHT = 1280, 720
+WIDTH, HEIGHT = 1024, 576
+screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN | pygame.SCALED)
 
-screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
 
 clock = pygame.time.Clock()
 
 BG_CLR = (100, 100, 100)
 
 pygame.display.set_caption("Tempest")
-
 pygame.display.set_icon(pygame.image.load("assets/wind_icon.png"))
 
 pygame.mouse.set_visible(False)
@@ -31,25 +26,20 @@ pygame.init()
 pygame.mixer.init()
 
 sfx_tempest = pygame.mixer.Sound("assets/tempest.wav")
-
 sfx_song = pygame.mixer.Sound("assets/pavane.wav")
 
 sfx_collect = pygame.mixer.Sound("assets/collect.wav")
-
 sfx_collect.set_volume(0.2)
 
 sfx_jump = pygame.mixer.Sound("assets/jump.wav")
-
 sfx_jump.set_volume(0.5)
 
 sfx_attack = pygame.mixer.Sound("assets/attack.wav")
-
 sfx_attack.set_volume(0.2)
 
 sfx_fire = pygame.mixer.Sound("assets/fire.wav")
 
 sfx_zap = pygame.mixer.Sound("assets/zap.wav")
-
 sfx_zap.set_volume(0.5)
 
 sfx_bubble = pygame.mixer.Sound("assets/bubble.wav")
@@ -57,13 +47,11 @@ sfx_bubble = pygame.mixer.Sound("assets/bubble.wav")
 sfx_air = pygame.mixer.Sound("assets/air.wav")
 
 sfx_kill = pygame.mixer.Sound("assets/enemy_killed.wav")
-
 sfx_kill.set_volume(0.5)
 
 sfx_renounce = pygame.mixer.Sound("assets/renounce.wav")
 
 sfx_glass = pygame.mixer.Sound("assets/glass.wav")
-
 sfx_glass.set_volume(0.2)
 
 TILE_SIZE = 32
@@ -71,41 +59,30 @@ TILE_SIZE = 32
 GRAVITY = pygame.Vector2(0, 0.3)
 
 kFont = pygame.font.Font("assets/font/5x5.ttf", 30)
-
 bigFont = pygame.font.Font("assets/font/5x5.ttf", 80)
 
 bg_img = pygame.image.load("assets/background.png").convert()
-
 bg_width, bg_height = bg_img.get_size()
 
 magicUse = 1
 
 coinCount = 0
-
 lives = 5
-
 scorecount = 0
 
 deflevel = 1
 
 magicDefault = 50
-
 magicPoints = magicDefault
 
 
 def move_and_collide(sprite, dx, dy, platforms):
-    """Move sprite by (dx, dy), then push back until it no longer collides.
-
-    Returns tuple (landed, bumped_head) so the caller can set
-    onGround / jump-reset flags.
-    """
 
     landed = bumped_head = False
 
     sprite.rect.x += dx
 
     for p in platforms:
-
         if sprite.rect.colliderect(p.rect):
 
             if dx > 0:
@@ -121,17 +98,14 @@ def move_and_collide(sprite, dx, dy, platforms):
     sprite.rect.y += dy
 
     for p in platforms:
-
         if sprite.rect.colliderect(p.rect):
 
             if dy > 0:
-
                 sprite.rect.bottom = p.rect.top
 
                 landed = True
 
             elif dy < 0:
-
                 sprite.rect.top = p.rect.bottom
 
                 bumped_head = True
@@ -142,7 +116,6 @@ def move_and_collide(sprite, dx, dy, platforms):
 
 
 class Camera:
-
     def __init__(self, viewport):
         self.offset = pygame.Vector2()
 
@@ -171,7 +144,6 @@ def pad_level(rows):
 
 
 class Player(pygame.sprite.Sprite):
-
     def __init__(self, pos, *groups,
 
                  platforms):
@@ -179,17 +151,13 @@ class Player(pygame.sprite.Sprite):
         super().__init__(*groups)
 
         self.image = pygame.Surface((20, 32))
-
         self.image.fill((255, 255, 255))
-
         self.rect = self.image.get_rect(
 
             topleft=pos)
 
         self.shieldActive = False
-
         self.shieldFrameCounter = 0
-
         self.shieldImage = pygame.image.load("assets/sheild.png").convert_alpha()
 
         run_frames = [
@@ -442,13 +410,11 @@ class Platform(pygame.sprite.Sprite):
         path = mapping.get(platform_type)
 
         if path and os.path.exists(path):
-
             self.image = pygame.image.load(path).convert_alpha()
 
         else:
 
             self.image = pygame.Surface((self.TILE_SIZE, self.TILE_SIZE), pygame.SRCALPHA)
-
             self.image.fill((255, 0, 255))
 
         depth = self.image.get_height() - self.TILE_SIZE
@@ -462,12 +428,6 @@ class Platform(pygame.sprite.Sprite):
         self._draw_offset_y = -depth
 
     def draw(self, surface, camera):
-
-        """
-        Draw the full oblique image, offset so that
-        only the bottom 32×32 of it aligns with self.rect.
-        """
-
         draw_rect = self.rect.move(0, self._draw_offset_y)
 
         surface.blit(self.image, camera.to_screen(draw_rect))
@@ -528,9 +488,7 @@ class Stephano(pygame.sprite.Sprite):
         }
 
         self.image = self.image_cache["left"][0]
-
         self.rect = self.image.get_rect(topleft=pos)
-
         self.rect = self.image.get_rect(topleft=pos)
 
         self.platforms = platforms
@@ -645,7 +603,7 @@ class Ariel(pygame.sprite.Sprite):
 
         self.image = pygame.Surface((32, 32))
 
-        self.image = pygame.image.load('assets/ufo.png')
+        self.image = pygame.image.load('assets/ariel.png')
 
         self.rect = self.image.get_rect(topleft=pos)
 
@@ -690,13 +648,13 @@ class Ariel(pygame.sprite.Sprite):
 
         if self.direction == "left":
 
-            self.image = pygame.image.load('assets/ufo.png')
+            self.image = pygame.image.load('assets/ariel.png')
 
             self.vel.x = -self.speed
 
         else:
 
-            self.image = pygame.transform.flip(pygame.image.load('assets/ufo.png'), True, False)
+            self.image = pygame.transform.flip(pygame.image.load('assets/ariel.png'), True, False)
 
             self.vel.x = self.speed
 
@@ -706,7 +664,6 @@ class Ariel(pygame.sprite.Sprite):
 
 
 class SmartEnemyTurnTrigger(pygame.sprite.Sprite):
-
     def __init__(self, pos, *groups):
         super().__init__(*groups)
 
@@ -718,7 +675,6 @@ class SmartEnemyTurnTrigger(pygame.sprite.Sprite):
 
 
 class Caliban(pygame.sprite.Sprite):
-
     def __init__(self, pos, *groups, platforms, players):
 
         super().__init__(*groups)
@@ -859,7 +815,6 @@ class Caliban(pygame.sprite.Sprite):
 
 
 class Coin(pygame.sprite.Sprite):
-
     def __init__(self, pos, *groups):
         super().__init__(*groups)
 
@@ -871,7 +826,6 @@ class Coin(pygame.sprite.Sprite):
 
 
 class Ammo(pygame.sprite.Sprite):
-
     def __init__(self, pos, *groups):
         super().__init__(*groups)
 
@@ -883,7 +837,6 @@ class Ammo(pygame.sprite.Sprite):
 
 
 class BigAmmo(pygame.sprite.Sprite):
-
     def __init__(self, pos, *groups):
         super().__init__(*groups)
 
@@ -895,7 +848,6 @@ class BigAmmo(pygame.sprite.Sprite):
 
 
 class Bullet(pygame.sprite.Sprite):
-
     def __init__(self, pos, direction, up, down, *groups):
 
         super().__init__(*groups)
@@ -952,7 +904,6 @@ class Bullet(pygame.sprite.Sprite):
 
 
 class LightningZap(pygame.sprite.Sprite):
-
     def __init__(self, pos, direction, *groups):
 
         super().__init__(*groups)
@@ -992,8 +943,7 @@ class LightningZap(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(center=self.rect.center)
 
 
-class SpiritBind(pygame.sprite.Sprite):
-
+class SpiritBindBubble(pygame.sprite.Sprite):
     def __init__(self, pos, direction, *groups):
 
         super().__init__(*groups)
@@ -1034,7 +984,6 @@ class SpiritBind(pygame.sprite.Sprite):
 
 
 class RoughMagicAOE(pygame.sprite.Sprite):
-
     def __init__(self, center_pos, *groups, playerkillables, entities, blueKeyCards):
 
         super().__init__(*groups)
@@ -1126,7 +1075,6 @@ class RoughMagicAOE(pygame.sprite.Sprite):
 
 
 class RenunciationFlash(pygame.sprite.Sprite):
-
     def __init__(self, center_pos, *groups):
 
         super().__init__(*groups)
@@ -1251,7 +1199,6 @@ class Bottle(pygame.sprite.Sprite):
 
 
 class Alonso(pygame.sprite.Sprite):
-
     def __init__(self, pos, *groups, platforms, entities, bullets, playerkillers, renunciationBlocked):
 
         super().__init__(*groups)
@@ -1454,7 +1401,6 @@ class Alonso(pygame.sprite.Sprite):
 
 
 class MovingPlatform(pygame.sprite.Sprite):
-
     def __init__(self, pos, *groups):
 
         super().__init__(*groups)
@@ -1487,7 +1433,6 @@ class MovingPlatform(pygame.sprite.Sprite):
 
 
 class BlueKey(pygame.sprite.Sprite):
-
     def __init__(self, pos, *groups):
         super().__init__(*groups)
 
@@ -1499,7 +1444,6 @@ class BlueKey(pygame.sprite.Sprite):
 
 
 class Crown(pygame.sprite.Sprite):
-
     def __init__(self, pos, direction, *groups):
 
         super().__init__(*groups)
@@ -1527,7 +1471,6 @@ class Crown(pygame.sprite.Sprite):
             self.vel.x = -self.speed
 
     def update(self):
-
         self.rect.x += self.vel.x
 
         self.rect.y += self.vel.y
@@ -1569,7 +1512,6 @@ class BlueDoor(pygame.sprite.Sprite):
 
 
 class Trophy(pygame.sprite.Sprite):
-
     def __init__(self, pos, *groups):
         super().__init__(*groups)
 
@@ -1613,13 +1555,9 @@ def gameBegin():
 
 def gameOver():
     global deflevel
-
     global lives
-
     global scorecount
-
     global magicPoints
-
     global coinCount
 
     running = True
@@ -1666,13 +1604,9 @@ def gameOver():
 
 def victory():
     global deflevel
-
     global lives
-
     global scorecount
-
     global magicPoints
-
     global coinCount
 
     running = True
@@ -1683,13 +1617,15 @@ def victory():
 
         screen.fill((0, 0, 0))
 
-        victoryText = bigFont.render("CONGRATS! You Win!", True, (255, 255, 255))
+        screen_w, screen_h = screen.get_size()
 
-        screen.blit(victoryText, (280, 300))
+        victoryText = bigFont.render("CONGRATS! You Win!", True, (255, 255, 255))
+        victoryRect = victoryText.get_rect(center=(screen_w // 2, screen_h // 2 - 40))
+        screen.blit(victoryText, victoryRect)
 
         playAgain = kFont.render("Press Enter to Continue", True, (255, 255, 255))
-
-        screen.blit(playAgain, (430, 620))
+        playAgainRect = playAgain.get_rect(center=(screen_w // 2, screen_h // 2 + 40))
+        screen.blit(playAgain, playAgainRect)
 
         pygame.display.update()
 
@@ -1904,7 +1840,6 @@ def printHud(p):
         return
 
     if player.activeWeapon == 1:
-
         magicUse = 1
 
         icon = pygame.image.load("assets/wind_icon.png")
@@ -1916,7 +1851,6 @@ def printHud(p):
         screen.blit(kFont.render(f"MAGIC: {magicPoints}", True, ttColor), (10, 70))
 
     elif player.activeWeapon == 2:
-
         magicUse = 5
 
         icon = pygame.image.load("assets/thunder_icon.png")
@@ -1928,7 +1862,6 @@ def printHud(p):
         screen.blit(kFont.render(f"MAGIC: {magicPoints}", True, ttColor), (10, 70))
 
     elif player.activeWeapon == 3:
-
         magicUse = 10
 
         icon = pygame.image.load("assets/spiritbind_icon.png")
@@ -1940,7 +1873,6 @@ def printHud(p):
         screen.blit(kFont.render(f"MAGIC: {magicPoints}", True, ttColor), (10, 70))
 
     elif player.activeWeapon == 4:
-
         magicUse = 15
 
         icon = pygame.image.load("assets/roughmagic.png")
@@ -1952,7 +1884,6 @@ def printHud(p):
         screen.blit(kFont.render(f"MAGIC: {magicPoints}", True, ttColor), (10, 70))
 
     elif player.activeWeapon == 5:
-
         magicUse = 30
 
         icon = pygame.image.load("assets/sheild.png")
@@ -1964,7 +1895,6 @@ def printHud(p):
         screen.blit(kFont.render(f"MAGIC: {magicPoints}", True, ttColor), (10, 70))
 
     elif player.activeWeapon == 6:
-
         magicUse = 15
 
         icon = pygame.image.load("assets/renounce.png")
@@ -2696,7 +2626,6 @@ def main():
     alpha_map = [[0 for _ in range(shadow_cols)] for _ in range(shadow_rows)]
 
     for col in range(len(level[0])):
-
         for row in range(len(level)):
 
             tile = level[row][col]
@@ -2762,7 +2691,6 @@ def main():
                             )
 
     for col in range(1, len(level[0]) - 1):
-
         for row in range(1, len(level) - 1):
 
             tile = level[row][col]
@@ -2876,7 +2804,6 @@ def main():
             blended_map[row][col] = int(sum(nz) / len(nz)) if nz else 0
 
     for col in range(shadow_cols):
-
         for row in range(1, shadow_rows):
 
             above = blended_map[row - 1][col]
@@ -3002,9 +2929,7 @@ def main():
     camera.center_on(player.rect)
 
     def killPlayer():
-
         global magicPoints
-
         global lives
 
         playerObject = next(iter(players), None)
@@ -3017,11 +2942,9 @@ def main():
         magicPoints = magicDefault
 
         if lives <= 0:
-
             gameOver()
 
         else:
-
             main()
 
     running = True
@@ -3047,30 +2970,6 @@ def main():
 
             coinCount = 0
 
-        if renunciationActive:
-
-            renunciationCooldown -= 1
-
-            for r in renunciationBlocked:
-                r.kill()
-
-            for enemy in playerKillables:
-
-                if hasattr(enemy, "stunned") and not isinstance(enemy, Alonso):
-
-                    enemy.stunned = 180
-
-                elif isinstance(enemy, Alonso):
-
-                    enemy.renunciationFrozen = 90
-
-                elif hasattr(enemy, "vel"):
-
-                    enemy.vel.x = 0
-
-            if renunciationCooldown <= 0:
-                renunciationActive = False
-
         for player in players:
 
             player.frictional = True
@@ -3078,7 +2977,6 @@ def main():
             on_moving_platform = False
 
             for smartPlatform in smartPlatforms:
-
                 if player.rect.colliderect(smartPlatform.rect):
 
                     if abs(player.rect.bottom - smartPlatform.rect.top) <= 6:
@@ -3094,7 +2992,6 @@ def main():
                 player.frictional = True
 
             for coin in coins:
-
                 if coin.rect.colliderect(player.rect):
                     coinCount += 1
 
@@ -3105,7 +3002,6 @@ def main():
                     scorecount += 10
 
             for smallAmmoPickup in smallAmmoPickups:
-
                 if smallAmmoPickup.rect.colliderect(player.rect):
                     magicPoints += 25
 
@@ -3114,7 +3010,6 @@ def main():
                     smallAmmoPickup.kill()
 
             for bigAmmoPickup in bigAmmoPickups:
-
                 if bigAmmoPickup.rect.colliderect(player.rect):
                     magicPoints += 50
 
@@ -3123,7 +3018,6 @@ def main():
                     bigAmmoPickup.kill()
 
             for blueKeyCard in blueKeyCards:
-
                 if blueKeyCard.rect.colliderect(player.rect):
                     player.keys[0] = True
 
@@ -3132,12 +3026,10 @@ def main():
                     blueKeyCard.kill()
 
             for blueDoor in blueDoors:
-
                 if player.keys[0]:
                     blueDoor.kill()
 
             for trophy in trophies:
-
                 if trophy.rect.colliderect(player.rect):
                     running = False
 
@@ -3179,9 +3071,9 @@ def main():
 
                     sfx_attack.play()
 
-                    SpiritBind((player.rect.x + 8, player.rect.y + 16), player.direction,
+                    SpiritBindBubble((player.rect.x + 8, player.rect.y + 16), player.direction,
 
-                               entities, bullets, playerSpiritBindBullets)
+                                     entities, bullets, playerSpiritBindBullets)
 
                     player.shotCooldown = 120
 
@@ -3218,7 +3110,6 @@ def main():
                     player.shotCooldown = 500
 
             for playerKiller in playerKillers:
-
                 if playerKiller.rect.colliderect(
 
                         player.rect):
@@ -3231,15 +3122,12 @@ def main():
         hits = pygame.sprite.groupcollide(bullets, platforms, True, False)
 
         for bottle in hits:
-
             if isinstance(bottle, Bottle):
 
                 sfx_glass.play()
 
         for smartEnemy in smartEnemies:
-
             for smartEnemyTurnTrigger in smartEnemyTurnTriggers:
-
                 if smartEnemy.rect.colliderect(smartEnemyTurnTrigger.rect):
 
                     if smartEnemy.direction == "left":
@@ -3255,16 +3143,13 @@ def main():
                         smartEnemy.direction = "left"
 
         for b in bullets:
-
             if b not in playerWindBullets and b not in playerLightningBullets and b not in playerSpiritBindBullets:
 
                 if b.rect.colliderect(player.rect):
                     killPlayer()
 
         for b in playerSpiritBindBullets:
-
             for enemy in playerKillables:
-
                 if b.rect.colliderect(enemy.rect):
 
                     b.kill()
@@ -3278,9 +3163,7 @@ def main():
                         enemy.vel.x = 0
 
         for b in playerWindBullets:
-
             for enemy in playerKillables:
-
                 if b.rect.colliderect(enemy.rect):
 
                     b.kill()
@@ -3313,9 +3196,7 @@ def main():
                         scorecount += 50
 
         for b in playerLightningBullets:
-
             for enemy in playerKillables:
-
                 if b.rect.colliderect(enemy.rect):
 
                     b.kill()
@@ -3390,20 +3271,40 @@ def main():
         screen.blit(shadow_overlay, (-camera.offset.x, -camera.offset.y + (SHADOW_RES * 2)))
 
         for s in entities:
+            on_screen = abs(s.rect.centerx - camera.offset.x - WIDTH // 2) <= (WIDTH // 2) + (TILE_SIZE * 4)
 
-            if abs(s.rect.centerx - camera.offset.x - WIDTH // 2) <= (WIDTH // 2) + (TILE_SIZE * 4):
-
+            if on_screen:
                 s.update()
 
-            else:
+                if renunciationActive:
+                    renunciationCooldown -= 1
 
-                if isinstance(s, (SpiritBind, Bullet, LightningZap, Crown)):
+                    for r in renunciationBlocked:
+                        r.kill()
+
+                    for enemy in playerKillables:
+                        enemy_on_screen = abs(enemy.rect.centerx - camera.offset.x - WIDTH // 2) <= (WIDTH // 2) + (
+                                    TILE_SIZE * 4)
+                        if not enemy_on_screen:
+                            continue
+
+                        if isinstance(enemy, Alonso):
+                            enemy.renunciationFrozen = 180
+                        elif hasattr(enemy, "stunned"):
+                            enemy.stunned = 360
+                        elif hasattr(enemy, "vel"):
+                            enemy.vel.x = 0
+
+                    if renunciationCooldown <= 0:
+                        renunciationActive = False
+
+            else:
+                if isinstance(s, (SpiritBindBubble, Bullet, LightningZap, Crown)):
                     s.kill()
 
         players.update()
 
         for s in entities:
-
             if camera.visible(s.rect):
 
                 screen.blit(s.image, camera.to_screen(s.rect))
